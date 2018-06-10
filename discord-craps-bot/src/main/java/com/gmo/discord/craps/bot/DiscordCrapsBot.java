@@ -93,17 +93,12 @@ public class DiscordCrapsBot {
                     .withCommand(command)
                     .withUser(message.getAuthor())
                     .build();
-            final CrapsGameKey key = commandInfo.getKey();
-            final Optional<ICommand> cmd = COMMAND_LIST.stream().filter(t-> t.canHandle(commandInfo)).findFirst();
-            if (cmd.isPresent()) {
-                final IMessage previousMessage = channel.getMessageHistory().stream()
-                        .filter(t -> t.getAuthor().equals(client.getOurUser()))
-                        .findFirst()
-                        .orElse(null);
-                sendMessage(cmd.get().execute(commandInfo, gameStore), previousMessage, channel);
-            } else {
-                HelpCommand.INSTANCE.execute(commandInfo, gameStore);
-            }
+            final ICommand cmd = COMMAND_LIST.stream().filter(t-> t.canHandle(commandInfo)).findFirst().orElse(HelpCommand.INSTANCE);
+            final IMessage previousMessage = channel.getMessageHistory().stream()
+                    .filter(t -> t.getAuthor().equals(client.getOurUser()))
+                    .findFirst()
+                    .orElse(null);
+            sendMessage(cmd.execute(commandInfo, gameStore), previousMessage, channel);
         }
     }
 
