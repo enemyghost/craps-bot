@@ -1,4 +1,4 @@
-package com.gmo.discord.craps.bot;
+package com.gmo.discord.craps.bot.entities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +9,8 @@ import java.util.stream.Collectors;
 import sx.blah.discord.handle.obj.IUser;
 
 /**
+ * Represents a Craps Game that can be progressed using the {@link #addRoll(Roll)}} method.
+ *
  * @author tedelen
  */
 public class CrapsGame {
@@ -79,7 +81,7 @@ public class CrapsGame {
     }
 
     public Roll lastRoll() {
-        return rollHistory.get(rollHistory.size() - 1);
+        return rollHistory.size() == 0 ? null : rollHistory.get(rollHistory.size() - 1);
     }
 
     public int getBet() {

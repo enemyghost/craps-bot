@@ -1,4 +1,4 @@
-package com.gmo.discord.craps.bot;
+package com.gmo.discord.craps.bot.entities;
 
 import java.util.Objects;
 
@@ -6,6 +6,8 @@ import sx.blah.discord.handle.obj.IChannel;
 import sx.blah.discord.handle.obj.IGuild;
 
 /**
+ * Represents a Key for which only one active {@link CrapsGame} can exist at a time.
+ *
  * @author tedelen
  */
 public class CrapsGameKey {

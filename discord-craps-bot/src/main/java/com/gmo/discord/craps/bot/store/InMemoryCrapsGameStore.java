@@ -1,11 +1,12 @@
-package com.gmo.discord.craps.bot;
+package com.gmo.discord.craps.bot.store;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import sx.blah.discord.handle.obj.IChannel;
-import sx.blah.discord.handle.obj.IGuild;
+import com.gmo.discord.craps.bot.entities.CrapsGame;
+import com.gmo.discord.craps.bot.entities.CrapsGameKey;
+import com.gmo.discord.craps.bot.entities.Roll;
 import sx.blah.discord.handle.obj.IUser;
 
 /**
