@@ -1,23 +1,26 @@
 package com.gmo.discord.craps.bot;
 
+import javax.activation.CommandMap;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gmo.discord.craps.bot.command.CommandInfo;
 import com.gmo.discord.craps.bot.command.CrapsCommand;
 import com.gmo.discord.craps.bot.command.HelpCommand;
 import com.gmo.discord.craps.bot.command.ICommand;
 import com.gmo.discord.craps.bot.command.InfoCommand;
+import com.gmo.discord.craps.bot.command.OddsCommand;
 import com.gmo.discord.craps.bot.command.PointCommand;
 import com.gmo.discord.craps.bot.command.RollCommand;
-import com.gmo.discord.craps.bot.entities.CrapsGameKey;
 import com.gmo.discord.craps.bot.message.CrapsMessage;
-import com.gmo.discord.craps.bot.message.DiceEmoji;
 import com.gmo.discord.craps.bot.store.CrapsGameStore;
+import com.gmo.discord.craps.bot.store.CrapsSessionStore;
 import com.gmo.discord.craps.bot.store.InMemoryCrapsGameStore;
+import com.gmo.discord.craps.bot.store.InMemoryCrapsSessionStore;
 import sx.blah.discord.api.ClientBuilder;
 import sx.blah.discord.api.IDiscordClient;
 import sx.blah.discord.api.events.EventSubscriber;
@@ -40,7 +43,7 @@ public class DiscordCrapsBot {
     private static final String PREFIX = "!";
     private static IDiscordClient client;
 
-    private final CrapsGameStore gameStore;
+    private final CrapsSessionStore sessionStore;
 
     public static void main(String[] args) throws DiscordException, RateLimitException {
         final String token = System.getenv("CRAPS_BOT_TOKEN");
@@ -49,12 +52,12 @@ public class DiscordCrapsBot {
         }
         System.out.println("Logging bot in...");
         client = new ClientBuilder().withToken(token).build();
-        client.getDispatcher().registerListener(new DiscordCrapsBot(new InMemoryCrapsGameStore()));
+        client.getDispatcher().registerListener(new DiscordCrapsBot(new InMemoryCrapsSessionStore(new InMemoryCrapsGameStore())));
         client.login();
     }
 
-    public DiscordCrapsBot(final CrapsGameStore gameStore) {
-        this.gameStore = Objects.requireNonNull(gameStore, "Null game store");
+    public DiscordCrapsBot(final CrapsSessionStore sessionStore) {
+        this.sessionStore = Objects.requireNonNull(sessionStore, "Null session store");
     }
 
     @EventSubscriber
@@ -69,13 +72,17 @@ public class DiscordCrapsBot {
         COMMAND_LIST.add(PointCommand.INSTANCE);
         COMMAND_LIST.add(InfoCommand.INSTANCE);
         COMMAND_LIST.add(HelpCommand.INSTANCE);
+        COMMAND_LIST.add(OddsCommand.INFINITE_ODDS_COMMAND);
     }
 
     @EventSubscriber
     public void onMessage(final MessageReceivedEvent event) throws RateLimitException, DiscordException, MissingPermissionsException {
         final IMessage message = event.getMessage();
         final IUser user = message.getAuthor();
-        if (user.isBot()) return;
+
+        if (user.isBot()) {
+            return;
+        }
 
         final IChannel channel = message.getChannel();
         final IGuild guild = message.getGuild();
@@ -93,12 +100,15 @@ public class DiscordCrapsBot {
                     .withCommand(command)
                     .withUser(message.getAuthor())
                     .build();
-            final ICommand cmd = COMMAND_LIST.stream().filter(t-> t.canHandle(commandInfo)).findFirst().orElse(HelpCommand.INSTANCE);
-            final IMessage previousMessage = channel.getMessageHistory().stream()
-                    .filter(t -> t.getAuthor().equals(client.getOurUser()))
-                    .findFirst()
-                    .orElse(null);
-            sendMessage(cmd.execute(commandInfo, gameStore), previousMessage, channel);
+            final AtomicInteger messagesAgo = new AtomicInteger();
+            COMMAND_LIST.stream().filter(t-> t.canHandle(commandInfo)).findFirst().ifPresent(cmd -> {
+                final IMessage previousMessage = channel.getMessageHistory().stream()
+                        .peek(t -> messagesAgo.incrementAndGet())
+                        .filter(t -> t.getAuthor().equals(client.getOurUser()))
+                        .findFirst()
+                        .orElse(null);
+                sendMessage(cmd.execute(commandInfo, sessionStore), messagesAgo.get() <= 5 ? previousMessage : null, channel);
+            });
         }
     }
 

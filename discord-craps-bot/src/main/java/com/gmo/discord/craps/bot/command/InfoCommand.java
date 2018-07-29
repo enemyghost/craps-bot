@@ -2,9 +2,9 @@ package com.gmo.discord.craps.bot.command;
 
 import java.util.Optional;
 
-import com.gmo.discord.craps.bot.entities.CrapsGame;
-import com.gmo.discord.craps.bot.store.CrapsGameStore;
+import com.gmo.discord.craps.bot.entities.CrapsSession;
 import com.gmo.discord.craps.bot.message.CrapsMessage;
+import com.gmo.discord.craps.bot.store.CrapsSessionStore;
 
 /**
  * {@link ICommand} that prints info about a game currently in progress, if one exists.
@@ -22,9 +22,13 @@ public class InfoCommand implements ICommand {
     }
 
     @Override
-    public CrapsMessage execute(final CommandInfo commandInfo, final CrapsGameStore gameStore) {
-        final Optional<CrapsGame> activeGame = gameStore.getActiveGame(commandInfo.getKey());
-        final String message = activeGame.map(Object::toString).orElse("No game in progress, use `!craps <bet>`");
+    public CrapsMessage execute(final CommandInfo commandInfo, final CrapsSessionStore gameStore) {
+        final Optional<CrapsSession> activeSession = gameStore.getActiveSession(commandInfo.getKey());
+
+        final String message = activeSession
+                .map(session -> session.getCurrentGame().toString() + "\nGames won so far: " + session.gamesWon())
+                .orElse("No game in progress, use `!craps <bet>`");
+
         return CrapsMessage.newBuilder().withText(message).build();
     }
 }

@@ -17,13 +17,12 @@ public interface CrapsGameStore {
      *
      * @param key {@link CrapsGameKey} to create a game for
      * @param user {@link IUser} who owns the game
-     * @param bet pass line bet amount
      *
      * @return the newly created {@link CrapsGame}
      *
      * @throws IllegalStateException if there is already a game in progress with the given {@link CrapsGameKey}
      */
-    CrapsGame newGame(final CrapsGameKey key, final IUser user, final int bet);
+    CrapsGame newGame(final CrapsGameKey key, final IUser user);
 
     /**
      * Gets the currently active game for the given key, if one exists

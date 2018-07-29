@@ -55,6 +55,11 @@ public class CrapsMessage {
             return this;
         }
 
+        public Builder appendText(final String text) {
+            this.text = this.text + text;
+            return this;
+        }
+
         public Builder withEmbedObject(final EmbedObject embedObject) {
             this.embedObject = embedObject;
             return this;

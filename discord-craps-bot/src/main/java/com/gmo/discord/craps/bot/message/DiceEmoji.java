@@ -1,6 +1,7 @@
 package com.gmo.discord.craps.bot.message;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import sx.blah.discord.handle.obj.IGuild;
@@ -16,6 +17,16 @@ import sx.blah.discord.handle.obj.IGuild;
  * @author tedelen
  */
 public final class DiceEmoji {
+    private static final Map<Integer, String> DEFAULT_EMOJI_NAMES = new HashMap<>();
+    static {
+        DEFAULT_EMOJI_NAMES.put(1, ":one:");
+        DEFAULT_EMOJI_NAMES.put(2, ":two:");
+        DEFAULT_EMOJI_NAMES.put(3, ":three:");
+        DEFAULT_EMOJI_NAMES.put(4, ":four:");
+        DEFAULT_EMOJI_NAMES.put(5, ":five:");
+        DEFAULT_EMOJI_NAMES.put(6, ":six:");
+    }
+
     private DiceEmoji() { }
 
     /**
@@ -28,6 +39,6 @@ public final class DiceEmoji {
 
         return Optional.ofNullable(guild.getEmojiByName("die" + die))
                 .map(Object::toString)
-                .orElse(":one:");
+                .orElse(DEFAULT_EMOJI_NAMES.get(die));
     }
 }

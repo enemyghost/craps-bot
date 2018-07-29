@@ -67,19 +67,35 @@ public class Roll {
     }
 
     /**
-     * Generates a craps-player friendly representation of the dice (e.g. Hard 8 or 3 Craps)
+     * What the croupier might say if they called this roll
+     */
+    public String call() {
+        if (yo()) {
+            return "Yo, Eleven! Yoleven!";
+        } else if (craps()) {
+            return String.format("%d Craps!", total);
+        } else if (hard()) {
+            return String.format("%d, hard %d", total, total);
+        } else if (easy()) {
+            return String.format("%d, eeeasy %d", total, total);
+        } else if (total == 5) {
+            return "Five, no field. No field five.";
+        } else if (total == 9) {
+            return "Nine, center field. Center field nine.";
+        } else if (sevenOut()) {
+            return "Seven";
+        } else {
+            return "";
+        }
+    }
+
+    /**
+     * Generates a representation of the dice containing dice emoji
      *
      * @param guild {@link IGuild} is, unfortunately, required to get an emoji representing each die value.
      */
     public String displayValue(final IGuild guild) {
-        if (yo()) {
-            return String.format("Yoleven! %s %s", getEmojiIdentifier(guild, value1), getEmojiIdentifier(guild, value2));
-        } else if (craps()) {
-            return String.format("%d Craps! %s %s", total, getEmojiIdentifier(guild, value1), getEmojiIdentifier(guild, value2));
-        } else {
-            final String prefix = hard() ? "Hard " : easy() ? "Easy " : total == 5 ? "5, no field. No field " : total == 9 ? "9, center field. Center field " : "";
-            return String.format("%s%d %s %s", prefix, total, getEmojiIdentifier(guild, value1), getEmojiIdentifier(guild, value2));
-        }
+        return String.format("%d%s %s %s", total, total < 10 ? " " : "", getEmojiIdentifier(guild, value1), getEmojiIdentifier(guild, value2));
     }
 
     @Override

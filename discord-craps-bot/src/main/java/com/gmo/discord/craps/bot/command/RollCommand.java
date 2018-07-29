@@ -1,15 +1,18 @@
 package com.gmo.discord.craps.bot.command;
 
-import static com.gmo.discord.craps.bot.message.DiceEmoji.getEmojiIdentifier;
-
 import java.awt.*;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Random;
 
 import com.gmo.discord.craps.bot.entities.CrapsGame;
+import com.gmo.discord.craps.bot.entities.CrapsSession;
 import com.gmo.discord.craps.bot.store.CrapsGameStore;
 import com.gmo.discord.craps.bot.entities.Roll;
 import com.gmo.discord.craps.bot.message.CrapsMessage;
+import com.gmo.discord.craps.bot.store.CrapsSessionStore;
+import sx.blah.discord.handle.obj.IUser;
 import sx.blah.discord.util.EmbedBuilder;
 
 /**
@@ -28,24 +31,36 @@ public class RollCommand implements ICommand {
     }
 
     @Override
-    public CrapsMessage execute(final CommandInfo commandInfo, final CrapsGameStore gameStore) {
-        final Optional<CrapsGame> gameOpt = gameStore.getActiveGame(commandInfo.getKey());
-        if (!gameOpt.isPresent()) {
+    public CrapsMessage execute(final CommandInfo commandInfo, final CrapsSessionStore sessionStore) {
+        final Optional<CrapsSession> sessionOpt = sessionStore.getActiveSession(commandInfo.getKey());
+        if (!sessionOpt.isPresent()) {
             return CrapsMessage.newBuilder()
-                    .withText("Start a new game first. `!craps <bet>`")
+                    .withText("Start a new session first. `!craps <bet>`")
                     .build();
-        } else if (gameOpt.get().getUser().getLongID() != commandInfo.getUser().getLongID()) {
+        } else if (sessionOpt.get().getShooter().getLongID() != commandInfo.getUser().getLongID()) {
             return CrapsMessage.newBuilder()
-                    .withText("You cannot roll. There is a game in progress, but it is owned by " + gameOpt.get().getUser().getDisplayName(commandInfo.getGuild()))
+                    .withText("You cannot roll. There is a game in progress, but it is owned by " + sessionOpt.get().getShooter().getDisplayName(commandInfo.getGuild()))
                     .build();
         }
 
+        final CrapsSession crapsSession = sessionOpt.get();
         final Roll roll = Roll.roll();
-        final CrapsGame crapsGame = gameStore.updateGame(gameOpt.get(), roll);
-        final EmbedBuilder embedBuilder = new EmbedBuilder().withTitle(roll.displayValue(commandInfo.getGuild()));
+        final Map<IUser, Long> payouts = crapsSession.roll(roll);
+        final CrapsGame crapsGame = crapsSession.getCurrentGame();
+
+        final EmbedBuilder embedBuilder = new EmbedBuilder();
+
+        if (roll.sevenOut()) {
+            embedBuilder.withTitle(crapsGame.isWon()
+                    ? "Seven winner! Front line winner."
+                    : "Seven out! Line away.");
+        } else {
+            embedBuilder.withTitle(roll.call());
+        }
+
         if (crapsGame.isActive()) {
             embedBuilder.withColor(Color.ORANGE)
-                    .withDesc(String.format("The point is %d. Roll again!", crapsGame.getPoint().getAsInt()));
+                    .appendDesc(String.format("The point is %d. Roll again!", crapsGame.getPoint().getAsInt()));
         } else {
             if (crapsGame.isWon()) {
                 embedBuilder.withColor(Color.GREEN);
@@ -56,28 +71,32 @@ public class RollCommand implements ICommand {
                 } else {
                     embedBuilder.appendDesc("Winner!");
                 }
-                embedBuilder.appendDesc(" Pay the line: ").appendDesc(Integer.toString(crapsGame.getBet() * 2));
+                embedBuilder.appendDesc("Pay the line!");
             } else {
                 embedBuilder.withColor(Color.RED);
                 if (roll.craps()) {
-                    embedBuilder.appendDesc(" Craps! You Lose. Sad!");
-                } else {
-                    embedBuilder.appendDesc(" Seven out! Line away.");
+                    embedBuilder.appendDesc("Craps! You Lose. Sad!");
                 }
             }
-            gameStore.completeGame(crapsGame.getKey());
         }
 
-        embedBuilder
-                .appendDesc("\nRoll History: \n")
-                .appendDesc(crapsGame.getRollHistory()
-                        .stream()
-                        .map(r -> String.format("%d%s %s %s",
-                                r.getTotal(),
-                                r.getTotal() < 10 ? " " : "", // helps with spacing if one digit number
-                                getEmojiIdentifier(commandInfo.getGuild(), r.getValue1()),
-                                getEmojiIdentifier(commandInfo.getGuild(), r.getValue2())))
-                        .collect(Collectors.joining("\n")));
+        if (crapsSession.isComplete()) {
+            embedBuilder.appendDesc("Session over. Pass the dice.");
+            sessionStore.completeSession(crapsSession.getKey());
+        }
+
+        new LinkedList<>(crapsGame.getRollHistory())
+                .descendingIterator()
+                .forEachRemaining(r -> embedBuilder
+                        .appendDesc("\n")
+                        .appendDesc(r.displayValue(commandInfo.getGuild())));
+
+        if (!payouts.isEmpty()) {
+            embedBuilder.appendDesc("\n Bet results: ");
+            payouts.entrySet().stream()
+                    .map(entry -> entry.getKey().getDisplayName(commandInfo.getGuild()) + ": " + entry.getValue())
+                    .forEach(embedBuilder::appendDesc);
+        }
 
         return CrapsMessage.newBuilder()
                 .withEmbedObject(embedBuilder.build())

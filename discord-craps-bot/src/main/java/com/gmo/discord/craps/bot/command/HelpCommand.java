@@ -2,6 +2,7 @@ package com.gmo.discord.craps.bot.command;
 
 import com.gmo.discord.craps.bot.store.CrapsGameStore;
 import com.gmo.discord.craps.bot.message.CrapsMessage;
+import com.gmo.discord.craps.bot.store.CrapsSessionStore;
 
 /**
  * {@link ICommand} that prints help message
@@ -19,8 +20,8 @@ public class HelpCommand implements ICommand {
     }
 
     @Override
-    public CrapsMessage execute(final CommandInfo commandInfo, final CrapsGameStore gameStore) {
-        final String message = gameStore.getActiveGame(commandInfo.getKey())
+    public CrapsMessage execute(final CommandInfo commandInfo, final CrapsSessionStore sessionStore) {
+        final String message = sessionStore.getActiveSession(commandInfo.getKey())
                 .map((activeGame) -> "Type `!roll` to roll or `!info` to see game state")
                 .orElse("Type `!craps <bet>` to start a new game.");
 

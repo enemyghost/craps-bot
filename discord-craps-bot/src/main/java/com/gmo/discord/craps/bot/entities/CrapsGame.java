@@ -38,16 +38,14 @@ public class CrapsGame {
 
     private final CrapsGameKey key;
     private final List<Roll> rollHistory;
-    private final int bet;
     private int point;
-    private final IUser user;
+    private final IUser shooter;
 
     private GameState state;
 
-    public CrapsGame(final CrapsGameKey key, final IUser user, final int bet) {
+    public CrapsGame(final CrapsGameKey key, final IUser shooter) {
         this.key = Objects.requireNonNull(key);
-        this.user = Objects.requireNonNull(user, "Null user");
-        this.bet = bet;
+        this.shooter = Objects.requireNonNull(shooter, "Null shooter");
         this.rollHistory = new ArrayList<>();
         this.state = GameState.COME_OUT;
     }
@@ -84,12 +82,8 @@ public class CrapsGame {
         return rollHistory.size() == 0 ? null : rollHistory.get(rollHistory.size() - 1);
     }
 
-    public int getBet() {
-        return bet;
-    }
-
-    public IUser getUser() {
-        return user;
+    public IUser getShooter() {
+        return shooter;
     }
 
     public synchronized GameState addRoll(final Roll roll) {
@@ -118,7 +112,7 @@ public class CrapsGame {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer(String.format("Craps game with bet %d in state `%s`", bet, state.description()));
+        final StringBuffer sb = new StringBuffer(String.format("Craps game in state `%s`", state.description()));
         if (rollHistory.isEmpty()) {
             sb.append("\nNo rolls yet. use `!roll` to roll.");
         } else {

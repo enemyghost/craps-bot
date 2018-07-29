@@ -72,6 +72,14 @@ public final class CommandInfo {
         }
     }
 
+    public Optional<Long> getLongArg(final int index) {
+        try {
+            return getArg(index).map(Long::parseLong);
+        } catch (final NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
     public String getUserName() {
         return user.getDisplayName(guild);
     }
